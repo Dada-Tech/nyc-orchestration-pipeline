@@ -1,52 +1,41 @@
-# think of this like importing a library in a python context,and then just defining the values in the module
 terraform {
-  required_version = ">= 1.0"
-  backend "local" {}  # Can change from "local" to "gcs" (for google) or "s3" (for aws), if you would like to preserve your tf-state online
   required_providers {
     google = {
       source  = "hashicorp/google"
+      version = "5.8.0"
     }
   }
 }
 
-# relies on plugins called providers to interact with other resources
 provider "google" {
-  project = var.project
-  region = var.region
-  // credentials = file(var.credentials)  # Use this if you do not want to set env-var GOOGLE_APPLICATION_CREDENTIALS
+  credentials = file(local.credentials)
+  project     = local.project
+  region      = var.region
 }
 
-# Data Lake Bucket
-# Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket
-# resource is a component like a server, storage bucket, database, data warehouse
-resource "google_storage_bucket" "data-lake-bucket" {
-  name          = "${local.data_lake_bucket}_${var.project}" # Concatenating DL bucket & Project name for unique naming
+# demo-bucket is the variable name, local nameof this resource
+resource "google_storage_bucket" "demo-bucket" {
+  name          = "${local.bucket_name}_${local.project}" # has to be globally unique
   location      = var.region
+  force_destroy = true
 
-  # Optional, but recommended settings:
-  storage_class = var.storage_class
-  uniform_bucket_level_access = true
-
-  versioning {
-    enabled     = true
-  }
-
+#   delete in 3 days
   lifecycle_rule {
+    condition {
+      age = 3 # days
+    }
     action {
       type = "Delete"
     }
-    condition {
-      age = 30  // days
-    }
   }
 
-  force_destroy = true
-}
-
-# DWH
-# Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
-resource "google_bigquery_dataset" "dataset" {
-  dataset_id = var.BQ_DATASET
-  project    = var.project
-  location   = var.region
+  # removes chunked data that hasn't finished uploading even across a day. It would be unusable anyway
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
+    }
+  }
 }
