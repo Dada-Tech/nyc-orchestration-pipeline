@@ -19,7 +19,7 @@ resource "google_storage_bucket" "demo-bucket" {
   location      = var.region
   force_destroy = true
 
-#   delete in 3 days
+  # delete in 3 days
   lifecycle_rule {
     condition {
       age = 3 # days
@@ -38,4 +38,11 @@ resource "google_storage_bucket" "demo-bucket" {
       type = "AbortIncompleteMultipartUpload"
     }
   }
+}
+
+# Ref: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/bigquery_dataset
+resource "google_bigquery_dataset" "dataset" {
+  dataset_id = var.BQ_DATASET
+  project    = local.project
+  location   = var.region
 }

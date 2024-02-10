@@ -11,3 +11,10 @@ variable "region" {
   default = "northamerica-northeast1"
   type = string
 }
+
+# Equivalent to schema in data warehouse
+variable "BQ_DATASET" {
+  description = "BigQuery Dataset that raw data (from GCS) will be written to"
+  type = string
+  default = "trips_data_all"
+}
